@@ -55,7 +55,7 @@ namespace MassHub.CLI
                 return null;
             }
 
-            return int.TryParse(input, out var actual) ? actual : (int?)null;
+            return int.TryParse(response, out var actual) ? actual : (int?)null;
         }
 
         internal static List<string> AskListResponse(string input)

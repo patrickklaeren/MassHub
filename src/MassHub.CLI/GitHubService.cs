@@ -110,7 +110,7 @@ namespace MassHub.CLI
             
             Log.Debug("Getting repositories for organisation {Organisation}", _organisationName);
 
-            var branches = new List<(long repositoryId, string branchName)>();
+            var branches = new List<(long repositoryId, string repositoryName, string branchName)>();
 
             Console.WriteLine("Getting branches...");
 
@@ -119,7 +119,7 @@ namespace MassHub.CLI
                 Console.WriteLine("Continuing with single repository");
                 Log.Debug("Updating single repository {RepositoryName}", response);
                 var repo = await _client.Repository.Get(_organisationName, response);
-                await FetchBranchesInRepository(repo.Id);
+                await FetchBranchesInRepository(repo.Id, repo.Name);
             }
             else
             {
@@ -129,7 +129,7 @@ namespace MassHub.CLI
 
                 foreach (var repository in repositories)
                 {
-                    await FetchBranchesInRepository(repository.Id);
+                    await FetchBranchesInRepository(repository.Id, repository.Name);
                 }
             }
             
@@ -187,7 +187,7 @@ namespace MassHub.CLI
                 $"number of reviews: {numberOfReviewsRequired}, " +
                 $"teams: {string.Join(", ", teamsToSetAsBranchProtectors)}");
 
-            foreach (var (branchRepositoryId, branchName) in branches)
+            foreach (var (branchRepositoryId, branchRepositoryName, branchName) in branches)
             {
                 if (branchesToUpdate.Any() 
                     && !branchesToUpdate.Any(x => x.Equals(branchName, StringComparison.CurrentCultureIgnoreCase)))
@@ -197,8 +197,20 @@ namespace MassHub.CLI
                 }
                 
                 Log.Debug("Processing update for branch {BranchName} in repository {RepositoryId}", branchName, branchRepositoryId);
+                
+                var currentProtection = new BranchProtectionSettings(new BranchProtectionRequiredStatusChecks(false, new List<string>()), 
+                    new BranchProtectionPushRestrictions(new List<Team>(), new List<User>()), 
+                    new BranchProtectionRequiredReviews(), 
+                    new EnforceAdmins(false));
 
-                var currentProtection = await _client.Repository.Branch.GetBranchProtection(branchRepositoryId, branchName);
+                try
+                {
+                    currentProtection = await _client.Repository.Branch.GetBranchProtection(branchRepositoryId, branchName);
+                }
+                catch (Exception)
+                {
+                    // There may not be protection on the branch
+                }
 
                 var statusChecks = new BranchProtectionRequiredStatusChecksUpdate(isStrict ?? currentProtection.RequiredStatusChecks.Strict, currentProtection.RequiredStatusChecks.Contexts);
                 
@@ -207,8 +219,13 @@ namespace MassHub.CLI
                     enableCodeOwners ?? currentProtection.RequiredPullRequestReviews.RequireCodeOwnerReviews,
                     numberOfReviewsRequired ?? currentProtection.RequiredPullRequestReviews.RequiredApprovingReviewCount);
                 
-                var pushRestrictions = new BranchProtectionPushRestrictionsUpdate(new BranchProtectionTeamCollection(teamsToSetAsBranchProtectors));
+                BranchProtectionPushRestrictionsUpdate pushRestrictions = null;
 
+                if (teamsToSetAsBranchProtectors.Any())
+                {
+                    pushRestrictions= new BranchProtectionPushRestrictionsUpdate(new BranchProtectionTeamCollection(teamsToSetAsBranchProtectors));   
+                }
+                
                 var enforceBranchProtectionOnAdmins = enforceAdmins ?? currentProtection.EnforceAdmins.Enabled;
                 
                 await _client.Repository.Branch.UpdateBranchProtection(branchRepositoryId, 
@@ -219,15 +236,15 @@ namespace MassHub.CLI
                 
                 Log.Debug("Processed update for branch {BranchName} in repository {RepositoryId}", branchName, branchRepositoryId);
 
-                Console.WriteLine($"Processed {branchName}");
+                Console.WriteLine($"Processed {branchRepositoryName}/{branchName}");
             }
 
             Console.WriteLine("Finished processing branches!");
 
-            async Task FetchBranchesInRepository(long repositoryId)
+            async Task FetchBranchesInRepository(long repositoryId, string repositoryName)
             {
                 var branchesInRepository = await _client.Repository.Branch.GetAll(repositoryId);
-                branches.AddRange(branchesInRepository.Select(x => (repositoryId, x.Name)));
+                branches.AddRange(branchesInRepository.Select(x => (repositoryId, repositoryName, x.Name)));
             }
         }
 
