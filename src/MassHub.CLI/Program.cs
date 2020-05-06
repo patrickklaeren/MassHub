@@ -42,7 +42,7 @@ namespace MassHub.CLI
                 new Option<string?>(new[] {"--token", "-t"}, () => null, "Set output to be verbose"),
                 new Option<string>(new[] {"--product-header"}, () => "mass-hub", "Optionally set a custom product header used when interacting with GitHub API"),
                 new Option<bool>("--verbose", () => false, "Set output to be verbose"),
-                new Option<string?>("--logFile", () => null, "Path to log file"),
+                new Option<string?>("--log-file", () => null, "Path to log file"),
             };
 
             rootCommand.Description = "MassHub - GitHub Management en masse";
