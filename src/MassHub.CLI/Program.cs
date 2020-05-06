@@ -39,7 +39,7 @@ namespace MassHub.CLI
 
             var rootCommand = new RootCommand
             {
-                new Option<string?>(new[] {"--token", "-t"}, () => null, "Set output to be verbose"),
+                new Option<string?>("--token", () => null, "Set output to be verbose"),
                 new Option<string?>(new[] {"--org", "-o"}, () => null, "Set organisation to use for all requests"),
                 new Option<string>(new[] {"--product-header"}, () => "mass-hub", "Optionally set a custom product header used when interacting with GitHub API"),
                 new Option<bool>("--verbose", () => false, "Set output to be verbose"),
@@ -48,44 +48,44 @@ namespace MassHub.CLI
 
             rootCommand.Description = "MassHub - GitHub Management en masse";
 
-            rootCommand.Handler = CommandHandler.Create<string?, string?, string, bool, string?>(async (gitHubToken, organisation, productHeader, isVerbose, logFilePath) =>
+            rootCommand.Handler = CommandHandler.Create<string?, string?, string, bool, string?>(async (token, org, productHeader, verbose, logFile) =>
             {
-                if (isVerbose)
+                if (verbose)
                 {
                     levelSwitch.MinimumLevel = LogEventLevel.Debug;
                 }
 
-                if (!string.IsNullOrWhiteSpace(logFilePath))
+                if (!string.IsNullOrWhiteSpace(logFile))
                 {
                     loggerConfiguration
-                        .WriteTo.File(logFilePath);
+                        .WriteTo.File(logFile!);
                 }
                 
                 Log.Logger = loggerConfiguration.CreateLogger();
 
-                while (string.IsNullOrWhiteSpace(gitHubToken))
+                while (string.IsNullOrWhiteSpace(token))
                 {
                     Log.Debug("GitHub token not provided during argument compile");
                     
                     Console.WriteLine("GitHub token not provided, please provide a token now to use for authentication, find a token at: https://github.com/settings/tokens");
 
-                    gitHubToken = Console.ReadLine();
+                    token = Console.ReadLine();
                 }
 
-                while (string.IsNullOrWhiteSpace(organisation))
+                while (string.IsNullOrWhiteSpace(org))
                 {
                     Log.Debug("GitHub organisation not provided during argument compile");
                     
                     Console.WriteLine("GitHub organisation not provided, please provide the name of the organisation to use for all requests");
 
-                    organisation = Console.ReadLine();
+                    org = Console.ReadLine();
                 }
 
                 Log.Debug("Starting GitHub client with provided options");
                 
                 Log.Information("Contacting GitHub with provided token under product header {Header}", productHeader);
 
-                await RunGitHubService(gitHubToken!, productHeader, organisation!);
+                await RunGitHubService(token!, productHeader, org!);
             });
             
             await rootCommand.InvokeAsync(args);
