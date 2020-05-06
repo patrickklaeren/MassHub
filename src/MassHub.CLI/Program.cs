@@ -122,7 +122,7 @@ namespace MassHub.CLI
                 else
                 {
                     operation = servicesLookup
-                        .Where(x => x.Key.operation == response)
+                        .Where(x => x.Key.operation.Equals(response, StringComparison.CurrentCultureIgnoreCase))
                         .Select(x => x.Value)
                         .SingleOrDefault();
                 }
