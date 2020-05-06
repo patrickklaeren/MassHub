@@ -112,6 +112,7 @@ class Build : NukeBuild
                 return new DotNetPublishSettings()
                     .SetProject(SourceDirectory / "MassHub.CLI" / "MassHub.CLI.csproj")
                     .SetRuntime(Runtime)
+                    .SetConfiguration(Configuration)
                     .EnableNoRestore()
                     .EnableNoBuild();
             }
