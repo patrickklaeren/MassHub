@@ -60,7 +60,7 @@ jobs:
           name: self-contained-linux-x64
           path: artifacts/self-contained-linux-x64
 
-  ubuntu-x64:
+  ubuntu-arm:
     name: Ubuntu ARM
     runs-on: ubuntu-latest
     env:
