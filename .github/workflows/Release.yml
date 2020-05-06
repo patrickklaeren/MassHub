@@ -1,0 +1,79 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  windows:
+    name: Windows
+    runs-on: windows-latest
+    env:
+     Runtime: win-x64
+    steps:
+      - uses: actions/checkout@v1
+      - name: Run './build.cmd Clean Restore Compile Publish'
+        run: ./build.cmd Clean Restore Compile Publish
+      - uses: actions/upload-artifact@v1
+        with:
+          name: self-contained-single-win-x64
+          path: artifacts/self-contained-single-win-x64
+      - uses: actions/upload-artifact@v1
+        with:
+          name: self-contained-win-x64
+          path: artifacts/self-contained-win-x64
+
+  macOS:
+    name: MacOS
+    runs-on: macOS-latest
+    env:
+     Runtime: osx-x64
+    steps:
+      - uses: actions/checkout@v1
+      - name: Run './build.cmd Clean Restore Compile Publish'
+        run: ./build.cmd Clean Restore Compile Publish
+      - uses: actions/upload-artifact@v1
+        with:
+          name: self-contained-single-osx-x64
+          path: artifacts/self-contained-single-osx-x64
+      - uses: actions/upload-artifact@v1
+        with:
+          name: self-contained-osx-x64
+          path: artifacts/self-contained-osx-x64
+
+  ubuntu-x64:
+    name: Ubuntu x64
+    runs-on: ubuntu-latest
+    env:
+     Runtime: linux-x64
+    steps:
+      - uses: actions/checkout@v1
+      - name: Run './build.cmd Clean Restore Compile Publish'
+        run: ./build.cmd Clean Restore Compile Publish
+      - uses: actions/upload-artifact@v1
+        with:
+          name: self-contained-single-linux-x64
+          path: artifacts/self-contained-single-linux-x64
+      - uses: actions/upload-artifact@v1
+        with:
+          name: self-contained-linux-x64
+          path: artifacts/self-contained-linux-x64
+
+  ubuntu-x64:
+    name: Ubuntu ARM
+    runs-on: ubuntu-latest
+    env:
+     Runtime: linux-arm
+    steps:
+      - uses: actions/checkout@v1
+      - name: Run './build.cmd Clean Restore Compile Publish'
+        run: ./build.cmd Clean Restore Compile Publish
+      - uses: actions/upload-artifact@v1
+        with:
+          name: self-contained-single-linux-arm
+          path: artifacts/self-contained-single-linux-arm
+      - uses: actions/upload-artifact@v1
+        with:
+          name: self-contained-linux-arm
+          path: artifacts/self-contained-linux-arm

@@ -27,9 +27,9 @@ namespace MassHub.CLI
                                                               
 ");
 
-            var version = Assembly.GetEntryAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
+            var version = Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
             
-            Console.WriteLine($"GitHub modification en masse - {version}");
+            Console.WriteLine($"GitHub modification en masse - {version ?? "1.0"}");
             
             var levelSwitch = new LoggingLevelSwitch();
 
@@ -47,7 +47,7 @@ namespace MassHub.CLI
 
             rootCommand.Description = "MassHub - GitHub Management en masse";
 
-            rootCommand.Handler = CommandHandler.Create<string?, string, bool, string?>((gitHubToken, productHeader, isVerbose, logFilePath) =>
+            rootCommand.Handler = CommandHandler.Create<string?, string, bool, string?>(async (gitHubToken, productHeader, isVerbose, logFilePath) =>
             {
                 if (isVerbose)
                 {
@@ -75,7 +75,7 @@ namespace MassHub.CLI
                 
                 Log.Information("Contacting GitHub with provided token under product header {Header}", productHeader);
 
-                RunGitHubService(gitHubToken!, productHeader);
+                await RunGitHubService(gitHubToken!, productHeader);
             });
             
             await rootCommand.InvokeAsync(args);
