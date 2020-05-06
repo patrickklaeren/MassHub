@@ -48,6 +48,10 @@ Although the application is mostly interactive, several startup arguments can be
 
 GitHub token that will be used to authenticate with GitHub for all requests.
 
+```--org```
+
+Name of GitHub organisation to target for all requests.
+
 ```--product-header```
 
 Allows setting of the product header used when contacting GitHub API, by default this will be `mass-hub`.
@@ -69,10 +73,10 @@ Example: `--log-file C:\MyLog\log.txt`
 Most basic use:
 
 ```
-MassHub.CLI.exe --token 123456789
+MassHub.CLI.exe --token 123456789 --org Foobar
 ```
 
-If you do not provide a token as an argument, you will be asked to enter this interactively.
+If you do not provide a token or organisation as an argument, you will be asked to enter this interactively.
 
 ## Stack
 

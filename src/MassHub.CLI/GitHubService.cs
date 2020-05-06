@@ -11,8 +11,9 @@ namespace MassHub.CLI
     internal class GitHubService
     {
         private readonly GitHubClient _client;
+        private readonly string _organisationName;
 
-        internal GitHubService(string gitHubToken, string productHeader)
+        internal GitHubService(string gitHubToken, string productHeader, string organisation)
         {
             if(string.IsNullOrWhiteSpace(gitHubToken))
                 throw new ArgumentNullException(nameof(gitHubToken));
@@ -25,15 +26,14 @@ namespace MassHub.CLI
             client.Credentials = tokenAuth;
             
             _client = client;
+            _organisationName = organisation ?? throw new InvalidOperationException(nameof(organisation));
         }
 
         internal async Task UpdateRepositories()
         {
-            var organisationName = AskAndWaitForStringResponse("Enter name of your GitHub Organisation or User");
+            Console.WriteLine("Getting repositories for organisation");
             
-            Log.Debug("Getting repositories for organisation {Organisation}", organisationName);
-            
-            var repositories = await _client.Repository.GetAllForOrg(organisationName);
+            var repositories = await _client.Repository.GetAllForOrg(_organisationName);
             
             Log.Debug("Got repositories");
             
@@ -57,8 +57,8 @@ namespace MassHub.CLI
 
             var isPrivate = AskYesNoOrDefaultResponse("Is private");
             var enableIssues = AskYesNoOrDefaultResponse("Enable issues");
-            var enableWiki = AskYesNoOrDefaultResponse("Enable issues");
-            var enableDownloads = AskYesNoOrDefaultResponse("Enable issues");
+            var enableWiki = AskYesNoOrDefaultResponse("Enable wiki");
+            var enableDownloads = AskYesNoOrDefaultResponse("Enable downloads");
             var allowMergeCommits = AskYesNoOrDefaultResponse("Enable merge commits");
             var allowRebaseMerge = AskYesNoOrDefaultResponse("Enable rebase merges");
             var allowSquashMerge = AskYesNoOrDefaultResponse("Enable squash merges");
@@ -105,26 +105,27 @@ namespace MassHub.CLI
 
         internal async Task UpdateBranches()
         {
-            var organisationName = AskAndWaitForStringResponse("Enter name of your GitHub Organisation or User");
-            
-            Console.WriteLine("Enter a repository ID to update a single repository or * for all repositories");
+            Console.WriteLine("Enter a repository name to update a single repository or * for all repositories");
             var response = Console.ReadLine();
             
-            Log.Debug("Getting repositories for organisation {Organisation}", organisationName);
+            Log.Debug("Getting repositories for organisation {Organisation}", _organisationName);
 
             var branches = new List<(long repositoryId, string branchName)>();
 
             Console.WriteLine("Getting branches...");
 
-            if (long.TryParse(response, out var repositoryId))
+            if (response != "*")
             {
-                Log.Debug("Updating single repository {RepositoryId}", repositoryId);
-                await FetchBranchesInRepository(repositoryId);
+                Console.WriteLine("Continuing with single repository");
+                Log.Debug("Updating single repository {RepositoryName}", response);
+                var repo = await _client.Repository.Get(_organisationName, response);
+                await FetchBranchesInRepository(repo.Id);
             }
             else
             {
+                Console.WriteLine("Continuing with all repositories");
                 Log.Debug("Updating all repositories, fetching repositories");
-                var repositories = await _client.Repository.GetAllForOrg(organisationName);
+                var repositories = await _client.Repository.GetAllForOrg(_organisationName);
 
                 foreach (var repository in repositories)
                 {
@@ -189,13 +190,13 @@ namespace MassHub.CLI
             foreach (var (branchRepositoryId, branchName) in branches)
             {
                 if (branchesToUpdate.Any() 
-                    && branchesToUpdate.Any(x => !x.Equals(branchName, StringComparison.CurrentCultureIgnoreCase)))
+                    && !branchesToUpdate.Any(x => x.Equals(branchName, StringComparison.CurrentCultureIgnoreCase)))
                 {
-                    Log.Debug("Ignoring branch {BranchName} in repository {RepositoryId}", branchName, repositoryId);
+                    Log.Debug("Ignoring branch {BranchName} in repository {RepositoryId}", branchName, branchRepositoryId);
                     continue;
                 }
                 
-                Log.Debug("Processing update for branch {BranchName} in repository {RepositoryId}", branchName, repositoryId);
+                Log.Debug("Processing update for branch {BranchName} in repository {RepositoryId}", branchName, branchRepositoryId);
 
                 var currentProtection = await _client.Repository.Branch.GetBranchProtection(branchRepositoryId, branchName);
 
@@ -216,7 +217,7 @@ namespace MassHub.CLI
                         pushRestrictions, 
                         enforceBranchProtectionOnAdmins));
                 
-                Log.Debug("Processed update for branch {BranchName} in repository {RepositoryId}", branchName, repositoryId);
+                Log.Debug("Processed update for branch {BranchName} in repository {RepositoryId}", branchName, branchRepositoryId);
 
                 Console.WriteLine($"Processed {branchName}");
             }
@@ -232,16 +233,36 @@ namespace MassHub.CLI
 
         internal async Task UpdateTeamRepositories()
         {
-            var organisationName = AskAndWaitForStringResponse("Enter name of your GitHub Organisation or User");
-            
             var teamIdResponse = AskAndWaitForIntResponse("Enter a team ID to update");
             
             Console.WriteLine("Enter a repository name to update a single repository or * for all repositories");
             var repositoryResponse = Console.ReadLine();
 
+            var acceptedTerms = new[] {"READ", "WRITE", "ADMIN"};
+            Permission teamPermission;
+
+            while (true)
+            {
+                Console.WriteLine("Enter permission for team on given repositories one of READ/WRITE/ADMIN");
+                var permissionResponse = Console.ReadLine();
+
+                if (!acceptedTerms.Any(x => x.Equals(permissionResponse, StringComparison.CurrentCultureIgnoreCase))) 
+                    continue;
+                
+                teamPermission = permissionResponse.ToUpper() switch
+                {
+                    "READ" => Permission.Pull,
+                    "WRITE" => Permission.Push,
+                    "ADMIN" => Permission.Admin,
+                    _ => throw new ArgumentOutOfRangeException(nameof(permissionResponse))
+                };
+                    
+                break;
+            }
+
             Console.WriteLine("Updating repositories for team");
             
-            Log.Debug("Getting repositories for organisation {Organisation}", organisationName);
+            Log.Debug("Getting repositories for organisation {Organisation}", _organisationName);
 
             if (repositoryResponse != "*")
             {
@@ -251,7 +272,7 @@ namespace MassHub.CLI
             else
             {
                 Log.Debug("Updating all repositories, fetching repositories");
-                var repositories = await _client.Repository.GetAllForOrg(organisationName);
+                var repositories = await _client.Repository.GetAllForOrg(_organisationName);
 
                 foreach (var repository in repositories)
                 {
@@ -263,7 +284,7 @@ namespace MassHub.CLI
 
             async Task AddRepositoryToTeam(string repositoryName)
             {
-                await _client.Organization.Team.AddRepository(teamIdResponse, organisationName, repositoryName);
+                await _client.Organization.Team.AddRepository(teamIdResponse, _organisationName, repositoryName, new RepositoryPermissionRequest(teamPermission));
             }
         }
     }

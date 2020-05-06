@@ -40,6 +40,7 @@ namespace MassHub.CLI
             var rootCommand = new RootCommand
             {
                 new Option<string?>(new[] {"--token", "-t"}, () => null, "Set output to be verbose"),
+                new Option<string?>(new[] {"--org", "-o"}, () => null, "Set organisation to use for all requests"),
                 new Option<string>(new[] {"--product-header"}, () => "mass-hub", "Optionally set a custom product header used when interacting with GitHub API"),
                 new Option<bool>("--verbose", () => false, "Set output to be verbose"),
                 new Option<string?>("--log-file", () => null, "Path to log file"),
@@ -47,7 +48,7 @@ namespace MassHub.CLI
 
             rootCommand.Description = "MassHub - GitHub Management en masse";
 
-            rootCommand.Handler = CommandHandler.Create<string?, string, bool, string?>(async (gitHubToken, productHeader, isVerbose, logFilePath) =>
+            rootCommand.Handler = CommandHandler.Create<string?, string?, string, bool, string?>(async (gitHubToken, organisation, productHeader, isVerbose, logFilePath) =>
             {
                 if (isVerbose)
                 {
@@ -71,19 +72,28 @@ namespace MassHub.CLI
                     gitHubToken = Console.ReadLine();
                 }
 
+                while (string.IsNullOrWhiteSpace(organisation))
+                {
+                    Log.Debug("GitHub organisation not provided during argument compile");
+                    
+                    Console.WriteLine("GitHub organisation not provided, please provide the name of the organisation to use for all requests");
+
+                    organisation = Console.ReadLine();
+                }
+
                 Log.Debug("Starting GitHub client with provided options");
                 
                 Log.Information("Contacting GitHub with provided token under product header {Header}", productHeader);
 
-                await RunGitHubService(gitHubToken!, productHeader);
+                await RunGitHubService(gitHubToken!, productHeader, organisation!);
             });
             
             await rootCommand.InvokeAsync(args);
         }
 
-        private static async Task RunGitHubService(string gitHubToken, string productHeader)
+        private static async Task RunGitHubService(string gitHubToken, string productHeader, string organisation)
         {
-            var service = new GitHubService(gitHubToken, productHeader);
+            var service = new GitHubService(gitHubToken, productHeader, organisation);
 
             var servicesLookup = new Dictionary<(int index, string operation), Func<Task>>
             {

@@ -32,19 +32,6 @@ namespace MassHub.CLI
             return null;
         }
 
-        internal static string AskAndWaitForStringResponse(string input)
-        {
-            string? organisationName = null;
-
-            while (string.IsNullOrWhiteSpace(organisationName))
-            {
-                Console.WriteLine(input);
-                organisationName = Console.ReadLine();
-            }
-
-            return organisationName!;
-        }
-
         internal static int AskAndWaitForIntResponse(string input)
         {
             int id;
@@ -82,7 +69,7 @@ namespace MassHub.CLI
                 return new List<string>();
             }
 
-            var split = input.Split(',');
+            var split = response.Split(',');
 
             return split.ToList();
         }
