@@ -5,6 +5,7 @@ using System.CommandLine.Invocation;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using MassHub.CLI.Services;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
@@ -93,13 +94,17 @@ namespace MassHub.CLI
 
         private static async Task RunGitHubService(string gitHubToken, string productHeader, string organisation)
         {
-            var service = new GitHubService(gitHubToken, productHeader, organisation);
+            var context = new GitHubContext(gitHubToken, productHeader, organisation);
 
             var servicesLookup = new Dictionary<(int index, string operation), Func<Task>>
             {
-                [(1, "repos")] = service.UpdateRepositories,
-                [(2, "branches")] = service.UpdateBranches,
-                [(3, "teamrepos")] = service.UpdateTeamRepositories,
+                [(1, "repos")] = PerformTask(new GitHubRepositoryService(context)),
+                
+                [(2, "branches")] = PerformTask(new GitHubBranchService(context)),
+                
+                [(3, "teamrepos")] = PerformTask(new GitHubTeamService(context)),
+                
+                [(4, "labels")] = PerformTask(new GitHubLabelService(context)),
             };
 
             while (true)
@@ -132,6 +137,8 @@ namespace MassHub.CLI
                     await operation();
                 }
             }
+
+            static Func<Task> PerformTask<T>(T instance) where T : IGitHubService => instance.Run;
         }
     }
 }

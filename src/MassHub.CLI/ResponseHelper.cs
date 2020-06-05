@@ -44,6 +44,20 @@ namespace MassHub.CLI
             return id;
         }
 
+        internal static string AskAndWaitForStringResponse(string input)
+        {
+            while (true)
+            {
+                Console.WriteLine(input);
+                var response = Console.ReadLine();
+
+                if (string.IsNullOrWhiteSpace(response))
+                    continue;
+
+                return response;
+            }
+        }
+
         internal static int? AskIntResponse(string input)
         {
             Console.WriteLine(input);

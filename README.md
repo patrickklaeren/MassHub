@@ -31,10 +31,13 @@ Current featureset includes:
   - Adding and removing teams
 
 - Updating Team repository ownership
+- Updating labels in all repositories of an organisation
 
 MassHub attempts to support as many configuration/user driven scenarios as possible, i.e. ignoring certain branches or repositories, but as with anything, there may be an edge case not supported. If you do end up using this tool and your edge case is not supported, feel free to [submit an issue](https://github.com/Inzanit/MassHub/issues/new).
 
 Releases are provided for Windows x64, Linux x64, Linux ARM and MacOS x64. This has only been tested on Windows.
+
+Treat all operations as destructive. There is no rollback functionality.
 
 [Find the latest release here](https://github.com/Inzanit/MassHub/releases).
 
