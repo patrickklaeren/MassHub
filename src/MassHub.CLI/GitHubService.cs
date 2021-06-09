@@ -138,7 +138,7 @@ namespace MassHub.CLI
 
             var branchesToUpdate = new List<string>();
             
-            if (!string.IsNullOrWhiteSpace(response))
+            if (!string.IsNullOrWhiteSpace(branchUpdateResponse))
             {
                 branchesToUpdate = branchUpdateResponse.Split(',').ToList();
                 Log.Debug("Updating {NumberOfBranches} branches: {IgnoredRepositories}", branchesToUpdate.Count, branchesToUpdate);
@@ -219,7 +219,7 @@ namespace MassHub.CLI
                     enableCodeOwners ?? currentProtection.RequiredPullRequestReviews.RequireCodeOwnerReviews,
                     numberOfReviewsRequired ?? currentProtection.RequiredPullRequestReviews.RequiredApprovingReviewCount);
                 
-                BranchProtectionPushRestrictionsUpdate pushRestrictions = null;
+                BranchProtectionPushRestrictionsUpdate? pushRestrictions = null;
 
                 if (teamsToSetAsBranchProtectors.Any())
                 {
@@ -263,7 +263,8 @@ namespace MassHub.CLI
                 Console.WriteLine("Enter permission for team on given repositories one of READ/WRITE/ADMIN");
                 var permissionResponse = Console.ReadLine();
 
-                if (!acceptedTerms.Any(x => x.Equals(permissionResponse, StringComparison.CurrentCultureIgnoreCase))) 
+                if (string.IsNullOrWhiteSpace(permissionResponse) 
+                    || !acceptedTerms.Any(x => x.Equals(permissionResponse, StringComparison.CurrentCultureIgnoreCase))) 
                     continue;
                 
                 teamPermission = permissionResponse.ToUpper() switch
@@ -281,7 +282,7 @@ namespace MassHub.CLI
             
             Log.Debug("Getting repositories for organisation {Organisation}", _organisationName);
 
-            if (repositoryResponse != "*")
+            if (!string.IsNullOrWhiteSpace(repositoryResponse) && repositoryResponse != "*")
             {
                 Log.Debug("Updating single repository {RepositoryName}", repositoryResponse);
                 await AddRepositoryToTeam(repositoryResponse);

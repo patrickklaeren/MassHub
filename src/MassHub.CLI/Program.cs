@@ -110,7 +110,7 @@ namespace MassHub.CLI
                 
                 var response = Console.ReadLine();
                 
-                Func<Task> operation;
+                Func<Task>? operation;
 
                 if (int.TryParse(response, out var parsedIndex))
                 {
@@ -127,7 +127,7 @@ namespace MassHub.CLI
                         .SingleOrDefault();
                 }
 
-                if (operation != null)
+                if (operation is not null)
                 {
                     await operation();
                 }

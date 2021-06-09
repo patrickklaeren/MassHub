@@ -2,7 +2,6 @@ using Nuke.Common;
 using Nuke.Common.CI;
 using Nuke.Common.CI.GitHubActions;
 using Nuke.Common.Execution;
-using Nuke.Common.Git;
 using Nuke.Common.IO;
 using Nuke.Common.ProjectModel;
 using Nuke.Common.Tooling;
@@ -13,13 +12,13 @@ using static Nuke.Common.IO.FileSystemTasks;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
 
 [CheckBuildProjectConfigurations]
-[UnsetVisualStudioEnvironmentVariables]
+[ShutdownDotNetAfterServerBuild]
 [GitHubActions("Release",
     GitHubActionsImage.WindowsLatest,
     GitHubActionsImage.MacOsLatest,
     GitHubActionsImage.UbuntuLatest,
     AutoGenerate = false,
-    OnPushBranches = new[] {"master"},
+    OnPushBranches = new[] { "master" },
     InvokedTargets =
         new[]
         {
@@ -35,7 +34,8 @@ class Build : NukeBuild
     ///   - JetBrains Rider            https://nuke.build/rider
     ///   - Microsoft VisualStudio     https://nuke.build/visualstudio
     ///   - Microsoft VSCode           https://nuke.build/vscode
-    public static int Main() => Execute<Build>(x => x.Compile);
+
+    public static int Main () => Execute<Build>(x => x.Compile);
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
@@ -43,10 +43,7 @@ class Build : NukeBuild
     [Parameter("RID for publishing")] readonly string Runtime = "win-x64";
 
     [Solution] readonly Solution Solution;
-    [GitRepository] readonly GitRepository GitRepository;
     [GitVersion] readonly GitVersion GitVersion;
-
-    [CI] readonly GitHubActions Hello;
 
     AbsolutePath SourceDirectory => RootDirectory / "src";
     AbsolutePath ArtifactsDirectory => RootDirectory / "artifacts";
@@ -60,8 +57,6 @@ class Build : NukeBuild
         });
 
     Target Restore => _ => _
-        .DependsOn(Clean)
-        .After(Clean)
         .Executes(() =>
         {
             DotNetRestore(s => s
@@ -71,7 +66,6 @@ class Build : NukeBuild
 
     Target Compile => _ => _
         .DependsOn(Restore)
-        .Triggers(Publish)
         .Executes(() =>
         {
             DotNetBuild(s => s
@@ -82,7 +76,7 @@ class Build : NukeBuild
                 .SetFileVersion(GitVersion.AssemblySemFileVer)
                 .SetInformationalVersion(GitVersion.InformationalVersion)
                 .SetAuthors("Inzanit")
-                .SetCopyright("Copyright Â© 2020 Inzanit. All rights reserved.")
+                .SetCopyright("Copyright © 2021 Patrick Klaeren. All rights reserved.")
                 .EnableNoRestore());
         });
 
@@ -95,14 +89,14 @@ class Build : NukeBuild
             var selfContainedSingleFile = GetBaseSettings()
                 .SetOutput(ArtifactsDirectory / $"self-contained-single-{Runtime}")
                 .EnableSelfContained()
-                .SetArgumentConfigurator(x =>
+                .SetProcessArgumentConfigurator(x =>
                     x.Add(
                         "-p:PublishReadyToRun=true -p:PublishSingleFile=true -p:PublishTrimmed=true -p:DebugType=None"));
 
             var selfContained = GetBaseSettings()
                 .SetOutput(ArtifactsDirectory / $"self-contained-{Runtime}")
                 .EnableSelfContained()
-                .SetArgumentConfigurator(x => x.Add("-p:PublishTrimmed=true -p:DebugType=None"));
+                .SetProcessArgumentConfigurator(x => x.Add("-p:PublishTrimmed=true -p:DebugType=None"));
 
             DotNetPublish(s => selfContainedSingleFile);
             DotNetPublish(s => selfContained);
