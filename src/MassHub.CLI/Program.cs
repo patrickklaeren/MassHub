@@ -37,18 +37,26 @@ namespace MassHub.CLI
                 .MinimumLevel.ControlledBy(levelSwitch)
                 .WriteTo.Console();
 
+            var tokenOption = new Option<string?>("--token", () => null, "Set output to be verbose");
+            var orgOption = new Option<string?>(new[] { "--org", "-o" }, () => null,
+                "Set organisation to use for all requests");
+            var productHeaderOption = new Option<string>(new[] { "--product-header" }, () => "mass-hub",
+                "Optionally set a custom product header used when interacting with GitHub API");
+            var verboseOption = new Option<bool>("--verbose", () => false, "Set output to be verbose");
+            var logFileOption = new Option<string?>("--log-file", () => null, "Path to log file");
+
             var rootCommand = new RootCommand
             {
-                new Option<string?>("--token", () => null, "Set output to be verbose"),
-                new Option<string?>(new[] {"--org", "-o"}, () => null, "Set organisation to use for all requests"),
-                new Option<string>(new[] {"--product-header"}, () => "mass-hub", "Optionally set a custom product header used when interacting with GitHub API"),
-                new Option<bool>("--verbose", () => false, "Set output to be verbose"),
-                new Option<string?>("--log-file", () => null, "Path to log file"),
+                tokenOption,
+                orgOption,
+                productHeaderOption,
+                verboseOption,
+                logFileOption
             };
 
             rootCommand.Description = "MassHub - GitHub Management en masse";
-
-            rootCommand.Handler = CommandHandler.Create<string?, string?, string, bool, string?>(async (token, org, productHeader, verbose, logFile) =>
+            
+            rootCommand.SetHandler(async (token, org, productHeader, verbose, logFile) =>
             {
                 if (verbose)
                 {
@@ -86,7 +94,7 @@ namespace MassHub.CLI
                 Log.Information("Contacting GitHub with provided token under product header {Header}", productHeader);
 
                 await RunGitHubService(token!, productHeader, org!);
-            });
+            }, tokenOption, orgOption, productHeaderOption, verboseOption, logFileOption);
             
             await rootCommand.InvokeAsync(args);
         }

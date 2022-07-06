@@ -1,7 +1,5 @@
 using Nuke.Common;
-using Nuke.Common.CI;
 using Nuke.Common.CI.GitHubActions;
-using Nuke.Common.Execution;
 using Nuke.Common.IO;
 using Nuke.Common.ProjectModel;
 using Nuke.Common.Tooling;
@@ -11,8 +9,6 @@ using Nuke.Common.Utilities.Collections;
 using static Nuke.Common.IO.FileSystemTasks;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
 
-[CheckBuildProjectConfigurations]
-[ShutdownDotNetAfterServerBuild]
 [GitHubActions("Release",
     GitHubActionsImage.WindowsLatest,
     GitHubActionsImage.MacOsLatest,
@@ -36,14 +32,18 @@ class Build : NukeBuild
     ///   - Microsoft VSCode           https://nuke.build/vscode
 
     public static int Main () => Execute<Build>(x => x.Compile);
+    
+    [Solution] 
+    readonly Solution Solution;
+    
+    [GitVersion] 
+    readonly GitVersion GitVersion;
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
 
-    [Parameter("RID for publishing")] readonly string Runtime = "win-x64";
-
-    [Solution] readonly Solution Solution;
-    [GitVersion] readonly GitVersion GitVersion;
+    [Parameter("RID for publishing")] 
+    readonly string Runtime = "win-x64";
 
     AbsolutePath SourceDirectory => RootDirectory / "src";
     AbsolutePath ArtifactsDirectory => RootDirectory / "artifacts";
@@ -75,8 +75,8 @@ class Build : NukeBuild
                 .SetAssemblyVersion(GitVersion.AssemblySemVer)
                 .SetFileVersion(GitVersion.AssemblySemFileVer)
                 .SetInformationalVersion(GitVersion.InformationalVersion)
-                .SetAuthors("Inzanit")
-                .SetCopyright("Copyright © 2021 Patrick Klaeren. All rights reserved.")
+                .SetAuthors("Patrick Klaeren")
+                .SetCopyright("Copyright Â© 2022 Patrick Klaeren. All rights reserved.")
                 .EnableNoRestore());
         });
 
