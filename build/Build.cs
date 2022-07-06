@@ -60,7 +60,6 @@ class Build : NukeBuild
         .Executes(() =>
         {
             DotNetRestore(s => s
-                .SetRuntime(Runtime)
                 .SetProjectFile(Solution));
         });
 
@@ -70,14 +69,12 @@ class Build : NukeBuild
         {
             DotNetBuild(s => s
                 .SetProjectFile(Solution)
-                .SetRuntime(Runtime)
                 .SetConfiguration(Configuration)
                 .SetAssemblyVersion(GitVersion.AssemblySemVer)
                 .SetFileVersion(GitVersion.AssemblySemFileVer)
                 .SetInformationalVersion(GitVersion.InformationalVersion)
                 .SetAuthors("Patrick Klaeren")
-                .SetCopyright("Copyright © 2022 Patrick Klaeren. All rights reserved.")
-                .EnableNoRestore());
+                .SetCopyright("Copyright © 2022 Patrick Klaeren. All rights reserved."));
         });
 
     Target Publish => _ => _
@@ -106,9 +103,7 @@ class Build : NukeBuild
                 return new DotNetPublishSettings()
                     .SetProject(SourceDirectory / "MassHub.CLI" / "MassHub.CLI.csproj")
                     .SetRuntime(Runtime)
-                    .SetConfiguration(Configuration)
-                    .EnableNoRestore()
-                    .EnableNoBuild();
+                    .SetConfiguration(Configuration);
             }
         });
 }
